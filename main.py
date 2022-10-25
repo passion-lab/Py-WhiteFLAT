@@ -1,0 +1,302 @@
+from tkinter import (
+    Tk, Toplevel,
+    DoubleVar,
+    Button, Label, Frame, Canvas, Scale,
+    LEFT, RIGHT, CENTER, X, Y, BOTH, TOP, BOTTOM,
+)
+from tkinter.ttk import (
+    Button as Btn, Label as Lbl, Frame as Frm, Scale as Scl, Style
+)
+from tkinter.colorchooser import askcolor
+from tkinter.messagebox import askyesno, showinfo
+
+
+class WhiteBoard:
+    # Class constants
+    title = "Whiteboard"
+    dimension = (1050, 570)
+    color_swatches = ["black", "brown", "red", "orange", "pink", "yellow", "lightgreen", "darkgreen", "darkblue",
+                      "darkcyan", "skyblue", "lightgrey", "grey", "white"]
+    default = {
+        "X": 0,
+        "Y": 0,
+        "BG": "white",
+        "FG": "black",
+        "H_BG": "#cce7ff",  # Mouse hover background
+        "H_FG": "black",  # Mouse hover foreground
+    }
+
+    # initializes the WhiteBoard class with the following...
+    def __init__(self, title: str | None = None):
+        # Overwrites class constants if specified
+        self.title = self.title if title is None else title
+
+        # Holds initial variables
+        self.is_draw = False   # To display confirmation message on screen clear
+        self.is_pencil = True  # To toggle the pencil and the eraser mode on click
+        self.reserved = {
+            "foreground": "",  # To store the current pencil fg color in eraser mode and used again in pencil mode
+            "thickness": 0.0  # To store the current pencil thickness in eraser mode and used again in pencil mode
+        }
+        self.reserved_thickness = ""  # To store current pencil thickness
+
+        # Initializes Tkinter window
+        self.window = Tk()
+        self.window.geometry(f"{self.dimension[0]}x{self.dimension[1]}")
+        self.window.minsize(width=self.dimension[0], height=self.dimension[1])
+        self.window.title(self.title)
+
+        # Stores tkinter widgets/elements/variables
+        self.styles = Style()
+        self.background, self.tool_panel_canvas, \
+        self.board_panel_canvas, self.control_panel = self.make_panels()
+        self.clear_button, self.bucket_button, self.pencil_button = self.make_drawing_tool_buttons()
+        self.custom_color_box = self.make_color_palates()
+        self.pencil_thickness = DoubleVar()
+        self.bg_indicator, self.fg_indicator = self.make_fg_bg_indicator()
+
+        # Runs required functions while initializing
+        self.make_thickness_slider()
+        self.make_menu()
+        self.mouse_bind()
+
+    # Makes frames and panels
+    def make_panels(self):
+        # App's background frame
+        background = Frame(self.window)
+        background.pack(fill=BOTH, expand=True)
+
+        # App's tools panel
+        tool_panel = Canvas(background, background="white", bd=0)
+        tool_panel.place(x=20, width=50, rely=0.07, relheight=0.85)
+
+        # App's drawing panel
+        draw_panel = Canvas(background, background="white", cursor="dot")
+        draw_panel.place(x=(20 + 50 + 15), relwidth=0.90, rely=0.03, relheight=0.85)
+
+        # App's control panel
+        control_panel = Canvas(background, highlightbackground="white", highlightthickness=0, background="white")
+        control_panel.place(x=(20 + 50 + 15), relwidth=0.90, rely=0.9, height=40)
+
+        return background, tool_panel, draw_panel, control_panel
+
+    # Makes pre-defined color palates
+    def make_color_palates(self):
+        for num, color in enumerate(self.color_swatches):
+            color_box = Lbl(self.tool_panel_canvas, width=3, background=color, relief="solid", cursor="hand2")
+            color_box.pack(side=TOP, pady=(20 if num == 0 else 0, 4))
+            color_box.bind('<Button-1>', lambda event=None, val=color: self.set_color(val))
+
+        # Custom color chooser
+        custom_color_box = Lbl(self.tool_panel_canvas, text="?", width=3, background="white", relief="solid",
+                               cursor="hand2", anchor="center")
+        custom_color_box.pack(side=TOP)
+        custom_color_box.bind('<Button-1>', lambda event=None: self.set_custom_color())
+
+        # Returns custom_color_box only for changing its background color on choosing custom color
+        return custom_color_box
+
+    # Makes board clear button
+    def make_drawing_tool_buttons(self):
+        clear_btn = Lbl(self.tool_panel_canvas, text="\u2718", foreground="", relief="solid", width=3,
+                        anchor="center", font=20)
+        clear_btn.pack(side=BOTTOM, pady=(4, 12))
+
+        bucket_btn = Lbl(self.tool_panel_canvas, text="B", foreground="grey", relief="solid", width=3,
+                         anchor="center", font=20)
+        bucket_btn.pack(side=BOTTOM, pady=(4, 0))
+
+        pencil_btn = Lbl(self.tool_panel_canvas, text="\uef16", foreground="grey", relief="solid", width=3,
+                         anchor="center", justify="center", font=20)
+        pencil_btn.pack(side=BOTTOM, pady=(4, 0))
+
+        return clear_btn, bucket_btn, pencil_btn
+
+    # Makes foreground and background color indicator
+    def make_fg_bg_indicator(self):
+        fg_bg_frame = Frame(self.control_panel)
+        fg_bg_frame.pack(side=LEFT, padx=(10, 5))
+        fg_indicator = Lbl(fg_bg_frame, text="\uf127", anchor="center", foreground=self.default["FG"],
+                           background="white", font=("Segoe MDL2 Assets", 10))
+        fg_indicator.pack(side=TOP)
+        bg_indicator = Lbl(fg_bg_frame, text="\uf126", anchor="center", foreground=self.default["BG"],
+                           background="white", font=("Segoe MDL2 Assets", 10))
+        bg_indicator.pack(side=TOP)
+
+        return bg_indicator, fg_indicator
+
+    # Makes pencil thickness slider
+    def make_thickness_slider(self):
+        slider = Scale(self.control_panel, from_=0, to=100, orient="horizontal", relief="flat", sliderrelief="solid",
+                       sliderlength=10, bd=0, width=5, font=("Arial", 8), fg="grey", bg="white", highlightthickness=0,
+                       command=self.change_thickness, variable=self.pencil_thickness)
+        # slider.place(x=110, rely=0.94)  # rely=0.94
+        slider.pack(side=LEFT, )
+        # slider_label.place(x=220, rely=0.945)
+
+    # Makes basic menu buttons about the app
+    def make_menu(self):
+        self.styles.configure('Btn.TButton', font=("Segoe MDL2 Assets", 12))
+
+        Btn(self.control_panel, text="\ue946", width=4, style='Btn.TButton',
+            command=self.about_the_app).pack(side=RIGHT, padx=(0, 10))
+        Btn(self.control_panel, text="\ue115", width=4, style='Btn.TButton').pack(side=RIGHT)
+        self.seperator(self.control_panel, side=RIGHT, ht=20, wt=4, bg="white", fg="lightgrey")
+        Btn(self.control_panel, text="\ue792", width=4, style='Btn.TButton').pack(side=RIGHT)
+        Btn(self.control_panel, text="\ue105", width=4, style='Btn.TButton').pack(side=RIGHT)
+        Btn(self.control_panel, text="\uec80", width=4, style='Btn.TButton').pack(side=RIGHT)
+
+    # Adds a vertical lined seperator for a Tkinter toplevel widget with defined height and width
+    @staticmethod
+    def seperator(parent: Tk | Frame | Canvas,
+                  side: [LEFT, RIGHT], ht: int, wt: int, bg: str = "white", fg: str = "grey"):
+        """
+        Adds a lined (vertical) seperator to a parent Tkinter window, frame, label frame or canvas.
+        :param parent: Top level widget of a Tkinter class.
+        :type parent: Tk() | Frame() | Canvas()
+        :param side: On which side of the parent the seperator will be placed.
+        :type side: LEFT, RIGHT or "left", "right"
+        :param ht: Height of the seperator.
+        :type ht: int
+        :param wt: Width of the seperator.
+        :type wt: int
+        :param bg: Background color of the seperator. Default is "white".
+        :type bg: str
+        :param fg: Foreground color of the seperator. Default is "lightgrey".
+        :type fg: str
+        :return: Nothing returns by this function now.
+        :rtype: None
+        """
+        _x = wt / 2 + 1
+        _seperator = Canvas(parent, height=ht, width=wt, background=bg, highlightbackground=bg)
+        _seperator.pack(side=side)
+        _seperator.create_line((_x, 1, _x, ht), fill=fg)
+
+        return None
+
+    # Sets new color on click on colour palate
+    def set_color(self, color):
+        self.default["FG"] = color
+        self.fg_indicator.configure(foreground=self.default["FG"])
+
+    # Sets custom color
+    def set_custom_color(self):
+        custom_color = askcolor()
+        if custom_color[1]:
+            self.default["FG"] = str(custom_color[1])
+            self.custom_color_box.configure(background=self.default["FG"])
+            self.fg_indicator.configure(foreground=self.default["FG"])
+
+    # Sets X, Y on mouse click on drawing board
+    def set_xy(self, click):
+        self.default["X"], self.default["Y"] = click.x, click.y
+
+    # Draws line on mouse left-click-drag
+    def draw_line(self, drag):
+        self.board_panel_canvas.create_line(
+            (self.default["X"], self.default["Y"], drag.x, drag.y), width=self.pencil_thickness.get(),
+            fill=self.default["FG"], capstyle="round", smooth=True)
+        self.default["X"], self.default["Y"] = drag.x, drag.y
+        self.is_draw = True
+
+    # Draws continuous line right-click
+    def draw_continuous_line(self, click):
+        self.board_panel_canvas.create_line((self.default['X'], self.default['Y'], click.x, click.y),
+                                            fill=self.default["FG"], width=self.pencil_thickness.get())
+        self.default["X"], self.default["Y"] = click.x, click.y
+
+    # Clears the drawing canvas on click of clear button
+    def clear_drawing_canvas(self):
+        self.clear_button.configure(background="red", foreground="white", borderwidth=0)
+        if self.is_draw:
+            option = askyesno(title="Warning", message="The drawing canvas will be cleared. It's advised you to"
+                                                       " click on NO first and save it before clearing the screen."
+                                                       "\n\nAre you sure you want to CLEAR the canvas?")
+            if option:
+                self.board_panel_canvas.delete('all')
+                self.is_draw = False
+
+                # Resets canvas background to White too
+                self.default["BG"] = "white"
+                self.board_panel_canvas.configure(background=self.default["BG"])
+                self.fg_indicator.configure(foreground=self.default["FG"])
+                self.bg_indicator.configure(foreground=self.default["BG"])
+
+    # Fills the drawing canvas's background color
+    def fill_drawing_canvas(self):
+        self.board_panel_canvas.configure(background=self.default["FG"])
+        self.default["BG"] = self.default["FG"]
+        self.is_draw = True
+        self.bg_indicator.configure(foreground=self.default["BG"])
+
+    # Changes the thickness of the pencil
+    def change_thickness(self, event):
+        # self.thickness_slider_label.configure(text="{: .1f}".format(self.pencil_thickness.get()))
+        pass
+
+    # Toggles the pencil and eraser mode on click
+    def toggle_pencil_eraser(self):
+        if self.is_pencil:
+            # Eraser mode
+            self.pencil_button.configure(text="\uef17", foreground="black")
+            self.reserved["foreground"] = self.default["FG"]  # stores current fg color to use in pencil mode
+            self.reserved["thickness"] = self.pencil_thickness.get()  # stores current pencil thickness too
+            self.default["FG"] = self.default["BG"]
+            self.pencil_thickness.set(5)  # sets eraser thickness to 5 for easy erasing
+            self.is_pencil = False
+        else:
+            # Pencil mode
+            self.pencil_button.configure(text="\uef16", foreground="grey")
+            self.default["FG"] = self.reserved["foreground"]  # sets fg color to that of the stored before
+            self.pencil_thickness.set(self.reserved["thickness"])  # sets pencil thickness from stored value too
+            self.is_pencil = True
+
+    # About the app window
+    def about_the_app(self):
+        about_window = Toplevel(self.window, background="white")
+        about_window.geometry("300x120")
+
+        main_frame = Frame(about_window, background="white")
+        main_frame.pack(fill=BOTH, expand=True)
+        Label(main_frame, text=self.title, font=("Times New Roman", 40, "bold"),
+              fg="darkcyan", bg="white").pack(fill=BOTH)
+        Label(main_frame, text="Made with passion by Passion-Lab", bg="white", fg="grey").pack()
+
+    # Binds mouse and keys event
+    def mouse_bind(self):
+        # Binds mouse left-click and left-click-and-drag with the drawing board
+        self.board_panel_canvas.bind('<Button-1>', self.set_xy)
+        self.board_panel_canvas.bind('<Button-3>', self.draw_continuous_line)
+        self.board_panel_canvas.bind('<B1-Motion>', self.draw_line)
+        # Mouse hover bindings
+        self.clear_button.bind('<Enter>', lambda event=None: self.clear_button.configure(
+            background=self.default["H_BG"], foreground="red"))
+        self.clear_button.bind('<Leave>', lambda event=None: self.clear_button.configure(background="", foreground=""))
+        self.bucket_button.bind('<Enter>', lambda event=None: self.bucket_button.configure(
+            background=self.default["H_BG"], foreground=self.default["H_FG"]))
+        self.bucket_button.bind('<Leave>', lambda event=None: self.bucket_button.configure(
+            background="", foreground="grey"))
+        self.pencil_button.bind('<Enter>', lambda event=None: self.pencil_button.configure(
+            background=self.default["H_BG"], foreground=self.default["H_FG"]))
+        self.pencil_button.bind('<Leave>', lambda event=None: self.pencil_button.configure(
+            background="", foreground="grey"))
+        # Mouse left-click events
+        self.clear_button.bind('<Button-1>', lambda event=None: self.clear_drawing_canvas())
+        self.bucket_button.bind('<Button-1>', lambda event=None: self.fill_drawing_canvas())
+        self.pencil_button.bind('<Button-1>', lambda event=None: self.toggle_pencil_eraser())
+
+    # Makes visible the Tkinter window
+    def start(self):
+        # Resets drawing canvas's foreground color to white and custom color box to default before starting the app
+        self.custom_color_box.configure(background="white")
+        self.default["FG"] = "black"
+
+        # Starts the app
+        self.window.mainloop()
+
+
+# Runs main application from this file only
+if __name__ == '__main__':
+
+    app = WhiteBoard(title="White Flat")
+    app.start()
