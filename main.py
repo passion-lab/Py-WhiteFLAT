@@ -9,6 +9,8 @@ from tkinter.ttk import (
 )
 from tkinter.colorchooser import askcolor
 from tkinter.messagebox import askyesno, showinfo
+from pyautogui import screenshot
+from os import getenv, path
 
 
 class WhiteBoard:
@@ -25,6 +27,7 @@ class WhiteBoard:
         "H_BG": "#cce7ff",  # Mouse hover background
         "H_FG": "black",  # Mouse hover foreground
     }
+    screenshot_path = getenv("USERPROFILE") + "\\Documents\\"
 
     # initializes the WhiteBoard class with the following...
     def __init__(self, title: str | None = None):
@@ -144,7 +147,20 @@ class WhiteBoard:
         self.seperator(self.control_panel, side=RIGHT, ht=20, wt=4, bg="white", fg="lightgrey")
         Btn(self.control_panel, text="\ue792", width=4, style='Btn.TButton').pack(side=RIGHT)
         Btn(self.control_panel, text="\ue105", width=4, style='Btn.TButton').pack(side=RIGHT)
-        Btn(self.control_panel, text="\uec80", width=4, style='Btn.TButton').pack(side=RIGHT)
+        Btn(self.control_panel, text="\uec80", width=4, style='Btn.TButton', command=self.take_screenshot).pack(side=RIGHT)
+        self.seperator(self.control_panel, side=RIGHT, ht=20, wt=4, bg="white", fg="lightgrey")
+        Btn(self.control_panel, text="\ue1a5", width=4, style='Btn.TButton').pack(side=RIGHT)
+        self.seperator(self.control_panel, side=RIGHT, ht=20, wt=4, bg="white", fg="lightgrey")
+        Btn(self.control_panel, text="\ue160", width=4, style='Btn.TButton').pack(side=RIGHT)
+
+    # Takes screenshot and save them
+    # @staticmethod
+    def take_screenshot(self):
+        from datetime import datetime
+        x, y = self.window.winfo_x(), self.window.winfo_y()
+        w, h = self.window.winfo_width(), self.window.winfo_height()
+        shot = screenshot(region=(x + 10, y, w, h + 25))
+        shot.save(f"{self.screenshot_path}{self.title}_shot@{datetime.now().strftime('%Y%m%d%H%M%S')}.png")
 
     # Adds a vertical lined seperator for a Tkinter toplevel widget with defined height and width
     @staticmethod
@@ -255,6 +271,7 @@ class WhiteBoard:
     def about_the_app(self):
         about_window = Toplevel(self.window, background="white")
         about_window.geometry("300x120")
+        about_window.wm_attributes('-toolwindow', True)
 
         main_frame = Frame(about_window, background="white")
         main_frame.pack(fill=BOTH, expand=True)
@@ -298,5 +315,5 @@ class WhiteBoard:
 # Runs main application from this file only
 if __name__ == '__main__':
 
-    app = WhiteBoard(title="White Flat")
+    app = WhiteBoard(title="WhiteFLAT")
     app.start()
