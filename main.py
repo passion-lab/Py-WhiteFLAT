@@ -159,8 +159,11 @@ class WhiteBoard:
         from datetime import datetime
         x, y = self.window.winfo_x(), self.window.winfo_y()
         w, h = self.window.winfo_width(), self.window.winfo_height()
+        file = f"{self.screenshot_path}{self.title}_shot@{datetime.now().strftime('%Y%m%d%H%M%S')}.png"
         shot = screenshot(region=(x + 10, y, w, h + 25))
-        shot.save(f"{self.screenshot_path}{self.title}_shot@{datetime.now().strftime('%Y%m%d%H%M%S')}.png")
+        shot.save(file)
+
+        self.in_app_notification(f"WhiteFLAT's screenshot is saved to {file}")
 
     # Adds a vertical lined seperator for a Tkinter toplevel widget with defined height and width
     @staticmethod
@@ -238,12 +241,15 @@ class WhiteBoard:
                 self.fg_indicator.configure(foreground=self.default["FG"])
                 self.bg_indicator.configure(foreground=self.default["BG"])
 
+                self.in_app_notification("Drawing canvas cleared.")
+
     # Fills the drawing canvas's background color
     def fill_drawing_canvas(self):
         self.board_panel_canvas.configure(background=self.default["FG"])
         self.default["BG"] = self.default["FG"]
         self.is_draw = True
         self.bg_indicator.configure(foreground=self.default["BG"])
+        self.in_app_notification("Canvas filled with the selected color.")
 
     # Changes the thickness of the pencil
     def change_thickness(self, event):
@@ -266,6 +272,20 @@ class WhiteBoard:
             self.default["FG"] = self.reserved["foreground"]  # sets fg color to that of the stored before
             self.pencil_thickness.set(self.reserved["thickness"])  # sets pencil thickness from stored value too
             self.is_pencil = True
+    
+    # In-app message notification bar
+    def in_app_notification(self, message: str):
+        msg_bar = Toplevel(self.window)
+        msg_bar.overrideredirect(True)
+        msg_bar.attributes('-alpha', 0.4)
+        msg_bar.geometry(f"+{self.window.winfo_x() + 30}+{self.window.winfo_y() + 40}")
+
+        bg_frame = Frame(msg_bar, bg="black")
+        bg_frame.pack(side="top", fill="both")
+        Label(bg_frame, text=message, bg="black", fg="white").pack(padx=(20, 80), pady=5)
+
+        msg_bar.after(5000, lambda: msg_bar.destroy())
+        msg_bar.mainloop()
 
     # About the app window
     def about_the_app(self):
