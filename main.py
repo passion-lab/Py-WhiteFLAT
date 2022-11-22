@@ -20,10 +20,10 @@ class WhiteBoard:
     color_swatches = ["black", "brown", "red", "orange", "pink", "yellow", "lightgreen", "darkgreen", "darkblue",
                       "darkcyan", "skyblue", "lightgrey", "grey", "white"]
     default = {
-        "X": 0,
-        "Y": 0,
-        "BG": "white",
-        "FG": "black",
+        "X"   : 0,
+        "Y"   : 0,
+        "BG"  : "white",
+        "FG"  : "black",
         "H_BG": "#cce7ff",  # Mouse hover background
         "H_FG": "black",  # Mouse hover foreground
     }
@@ -35,11 +35,11 @@ class WhiteBoard:
         self.title = self.title if title is None else title
 
         # Holds initial variables
-        self.is_draw = False   # To display confirmation message on screen clear
+        self.is_draw = False  # To display confirmation message on screen clear
         self.is_pencil = True  # To toggle the pencil and the eraser mode on click
         self.reserved = {
             "foreground": "",  # To store the current pencil fg color in eraser mode and used again in pencil mode
-            "thickness": 0.0  # To store the current pencil thickness in eraser mode and used again in pencil mode
+            "thickness" : 0.0  # To store the current pencil thickness in eraser mode and used again in pencil mode
         }
         self.reserved_thickness = ""  # To store current pencil thickness
 
@@ -52,7 +52,7 @@ class WhiteBoard:
         # Stores tkinter widgets/elements/variables
         self.styles = Style()
         self.background, self.tool_panel_canvas, \
-        self.board_panel_canvas, self.control_panel = self.make_panels()
+            self.board_panel_canvas, self.control_panel = self.make_panels()
         self.clear_button, self.bucket_button, self.pencil_button = self.make_drawing_tool_buttons()
         self.custom_color_box = self.make_color_palates()
         self.pencil_thickness = DoubleVar()
@@ -147,7 +147,8 @@ class WhiteBoard:
         self.seperator(self.control_panel, side=RIGHT, ht=20, wt=4, bg="white", fg="lightgrey")
         Btn(self.control_panel, text="\ue792", width=4, style='Btn.TButton').pack(side=RIGHT)
         Btn(self.control_panel, text="\ue105", width=4, style='Btn.TButton').pack(side=RIGHT)
-        Btn(self.control_panel, text="\uec80", width=4, style='Btn.TButton', command=self.take_screenshot).pack(side=RIGHT)
+        Btn(self.control_panel, text="\uec80", width=4, style='Btn.TButton', command=self.take_screenshot).pack(
+            side=RIGHT)
         self.seperator(self.control_panel, side=RIGHT, ht=20, wt=4, bg="white", fg="lightgrey")
         Btn(self.control_panel, text="\ue1a5", width=4, style='Btn.TButton').pack(side=RIGHT)
         self.seperator(self.control_panel, side=RIGHT, ht=20, wt=4, bg="white", fg="lightgrey")
@@ -272,7 +273,7 @@ class WhiteBoard:
             self.default["FG"] = self.reserved["foreground"]  # sets fg color to that of the stored before
             self.pencil_thickness.set(self.reserved["thickness"])  # sets pencil thickness from stored value too
             self.is_pencil = True
-    
+
     # In-app message notification bar
     def in_app_notification(self, message: str):
         msg_bar = Toplevel(self.window)
@@ -334,6 +335,5 @@ class WhiteBoard:
 
 # Runs main application from this file only
 if __name__ == '__main__':
-
     app = WhiteBoard(title="WhiteFLAT")
     app.start()
