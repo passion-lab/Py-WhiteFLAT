@@ -9,6 +9,7 @@ from tkinter.ttk import (
 )
 from tkinter.colorchooser import askcolor
 from tkinter.messagebox import askyesno, showinfo
+# from PIL import Image, ImageDraw
 from typing import Literal
 
 from pyautogui import screenshot
@@ -270,12 +271,16 @@ class WhiteBoard:
             self.default["FG"] = self.default["BG"]
             self.pencil_thickness.set(5)  # sets eraser thickness to 5 for easy erasing
             self.is_pencil = False
+
+            self.in_app_notification("Drawing canvas is switched to 'Eraser Mode'.", "switch")
         else:
             # Pencil mode
             self.pencil_button.configure(text="\uef16", foreground="grey")
             self.default["FG"] = self.reserved["foreground"]  # sets fg color to that of the stored before
             self.pencil_thickness.set(self.reserved["thickness"])  # sets pencil thickness from stored value too
             self.is_pencil = True
+
+            self.in_app_notification("Drawing canvas is switched to 'Pencil Mode'.", "switch")
 
     # In-app message notification bar
     def in_app_notification(self, message: str,
@@ -288,7 +293,7 @@ class WhiteBoard:
             "info": ("\ue946", "blue", "INFORMATION"),
             "warn": ("\ue814", "yellow", "WARNING"),
             "error": ("\ue25b", "red", "ERROR"),
-            "switch": ("\ue148", "0085FF", "SWITCH")
+            "switch": ("\ue148", "violet", "SWITCH")
         }
 
         # Message bar
