@@ -9,6 +9,8 @@ from tkinter.ttk import (
 )
 from tkinter.colorchooser import askcolor
 from tkinter.messagebox import askyesno, showinfo
+from typing import Literal
+
 from pyautogui import screenshot
 from os import getenv, path
 
@@ -164,7 +166,7 @@ class WhiteBoard:
         shot = screenshot(region=(x + 10, y, w, h + 25))
         shot.save(file)
 
-        self.in_app_notification(f"WhiteFLAT's screenshot is saved to {file}")
+        self.in_app_notification(f"WhiteFLAT's screenshot is saved to {file}", "done")
 
     # Adds a vertical lined seperator for a Tkinter toplevel widget with defined height and width
     @staticmethod
@@ -242,7 +244,7 @@ class WhiteBoard:
                 self.fg_indicator.configure(foreground=self.default["FG"])
                 self.bg_indicator.configure(foreground=self.default["BG"])
 
-                self.in_app_notification("Drawing canvas cleared.")
+                self.in_app_notification("Drawing canvas is cleared.", "done")
 
     # Fills the drawing canvas's background color
     def fill_drawing_canvas(self):
@@ -250,7 +252,8 @@ class WhiteBoard:
         self.default["BG"] = self.default["FG"]
         self.is_draw = True
         self.bg_indicator.configure(foreground=self.default["BG"])
-        self.in_app_notification("Canvas filled with the selected color.")
+
+        self.in_app_notification("Drawing canvas is filled with the selected color.", "info")
 
     # Changes the thickness of the pencil
     def change_thickness(self, event):
@@ -275,15 +278,32 @@ class WhiteBoard:
             self.is_pencil = True
 
     # In-app message notification bar
-    def in_app_notification(self, message: str):
+    def in_app_notification(self, message: str,
+                            message_type: Literal["done", "info", "warn", "error", "switch"]):
+        # Message heading design
+        heading_font = ("Segoe MDL2 Assets", 22, "bold")
+        heading_icon = {
+            # "message_type": ("\icon_unicode", "icon_color", "heading")
+            "done": ("\ue001", "green", "DONE"),
+            "info": ("\ue946", "blue", "INFORMATION"),
+            "warn": ("\ue814", "yellow", "WARNING"),
+            "error": ("\ue25b", "red", "ERROR"),
+            "switch": ("\ue148", "0085FF", "SWITCH")
+        }
+
+        # Message bar
         msg_bar = Toplevel(self.window)
         msg_bar.overrideredirect(True)
-        msg_bar.attributes('-alpha', 0.4)
+        msg_bar.attributes('-alpha', 0.7)
         msg_bar.geometry(f"+{self.window.winfo_x() + 30}+{self.window.winfo_y() + 40}")
 
-        bg_frame = Frame(msg_bar, bg="black")
-        bg_frame.pack(side="top", fill="both")
-        Label(bg_frame, text=message, bg="black", fg="white").pack(padx=(20, 80), pady=5)
+        bg_frame = Frame(msg_bar, bg="white")
+        bg_frame.pack(side="top", fill="both", ipadx=10)
+        Label(bg_frame, text=heading_icon[message_type][0], font=heading_font, fg=heading_icon[message_type][1],
+              bg="white").grid(row=0, rowspan=2, column=0)
+        Label(bg_frame, text=heading_icon[message_type][2], fg=heading_icon[message_type][1],
+              bg="white").grid(row=0, column=1, sticky="w")
+        Label(bg_frame, text=message, bg="white", fg="black").grid(row=1, column=1)
 
         msg_bar.after(5000, lambda: msg_bar.destroy())
         msg_bar.mainloop()
