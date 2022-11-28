@@ -1,3 +1,5 @@
+import io
+import os
 from tkinter import (
     Tk, Toplevel,
     DoubleVar,
@@ -9,11 +11,13 @@ from tkinter.ttk import (
 )
 from tkinter.colorchooser import askcolor
 from tkinter.messagebox import askyesno, showinfo
-# from PIL import Image, ImageDraw
+from tkinter.filedialog import asksaveasfilename
 from typing import Literal
 
+from PIL import Image, ImageDraw
 from pyautogui import screenshot
-from os import getenv, path
+from win32gui import GetWindowRect
+from os import getenv, path, curdir
 
 
 class WhiteBoard:
@@ -30,7 +34,7 @@ class WhiteBoard:
         "H_BG": "#cce7ff",  # Mouse hover background
         "H_FG": "black",  # Mouse hover foreground
     }
-    screenshot_path = getenv("USERPROFILE") + "\\Documents\\"
+    screenshot_path = getenv("USERPROFILE") + "\\Pictures\\"
 
     # initializes the WhiteBoard class with the following...
     def __init__(self, title: str | None = None):
@@ -56,6 +60,9 @@ class WhiteBoard:
         self.styles = Style()
         self.background, self.tool_panel_canvas, \
             self.board_panel_canvas, self.control_panel = self.make_panels()
+        self.image = Image.new("RGB", (self.board_panel_canvas.winfo_width(),
+                                       self.board_panel_canvas.winfo_height()), "white")
+        self.draw = ImageDraw.Draw(self.image)
         self.clear_button, self.bucket_button, self.pencil_button = self.make_drawing_tool_buttons()
         self.custom_color_box = self.make_color_palates()
         self.pencil_thickness = DoubleVar()
@@ -148,8 +155,10 @@ class WhiteBoard:
             command=self.about_the_app).pack(side=RIGHT, padx=(0, 10))
         Btn(self.control_panel, text="\ue115", width=4, style='Btn.TButton').pack(side=RIGHT)
         self.seperator(self.control_panel, side=RIGHT, ht=20, wt=4, bg="white", fg="lightgrey")
-        Btn(self.control_panel, text="\ue792", width=4, style='Btn.TButton').pack(side=RIGHT)
-        Btn(self.control_panel, text="\ue105", width=4, style='Btn.TButton').pack(side=RIGHT)
+        Btn(self.control_panel, text="\ue792", width=4, style='Btn.TButton',
+            command=self.save_as).pack(side=RIGHT)
+        Btn(self.control_panel, text="\ue105", width=4, style='Btn.TButton',
+            command=self.save).pack(side=RIGHT)
         Btn(self.control_panel, text="\uec80", width=4, style='Btn.TButton', command=self.take_screenshot).pack(
             side=RIGHT)
         self.seperator(self.control_panel, side=RIGHT, ht=20, wt=4, bg="white", fg="lightgrey")
@@ -168,6 +177,27 @@ class WhiteBoard:
         shot.save(file)
 
         self.in_app_notification(f"WhiteFLAT's screenshot is saved to {file}", "done")
+
+    def save(self):
+        save_file_name = asksaveasfilename(title="Save WhiteFLAT Canvas to A PostScript File",
+                                           confirmoverwrite=True, defaultextension="ps",
+                                           initialdir=self.screenshot_path, initialfile="Untitled_WhiteFLAT.ps",
+                                           filetypes=[("PostScript File", ".ps"), ("All Files", ".*")])
+        if save_file_name:
+            self.board_panel_canvas.postscript(file=save_file_name, colormode='color')
+
+    def save_as(self):
+        save_as_file_name = asksaveasfilename(title="Save WhiteFLAT Canvas as An Image File",
+                                              confirmoverwrite=True, defaultextension="png",
+                                              initialdir=self.screenshot_path, initialfile="Untitled_WhiteFLAT.png",
+                                              filetypes=[("Portable Network Graphic", ".png"),
+                                                         ("JPG", ".jpg"),
+                                                         ("Bit Map Pictures", ".bmp")])
+        if save_as_file_name:
+            self.image.save(save_as_file_name, save_as_file_name[-1:-3])
+        # ps = self.board_panel_canvas.postscript(colormode='color')
+        # img = Image.open(io.BytesIO(ps.encode('utf-8')))
+        # img.save('test.jpg')
 
     # Adds a vertical lined seperator for a Tkinter toplevel widget with defined height and width
     @staticmethod
@@ -219,6 +249,9 @@ class WhiteBoard:
         self.board_panel_canvas.create_line(
             (self.default["X"], self.default["Y"], drag.x, drag.y), width=self.pencil_thickness.get(),
             fill=self.default["FG"], capstyle="round", smooth=True)
+        self.draw.line([(self.default["X"], self.default["Y"]), (drag.x, drag.y)],
+                       width=int(self.pencil_thickness.get()), fill=self.default["FG"], joint="curve")
+
         self.default["X"], self.default["Y"] = drag.x, drag.y
         self.is_draw = True
 
