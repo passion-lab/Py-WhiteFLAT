@@ -111,14 +111,17 @@ class WhiteBoard:
 
     # Makes board clear button
     def make_drawing_tool_buttons(self):
+        # Drawing canvas clear button
         clear_btn = Lbl(self.tool_panel_canvas, text="\ue107", foreground="", relief="solid", width=3,
                         anchor="center", font=("Segoe MDL2 Assets", 12), padding=(3, 2))  #\u2718
         clear_btn.pack(side=BOTTOM, pady=(4, 12))
 
+        # Drawing canvas fill / background fill button
         bucket_btn = Lbl(self.tool_panel_canvas, text="\ue771", foreground="grey", relief="solid", width=3,
                          anchor="center", font=("Segoe MDL2 Assets", 12), padding=(3, 2))
         bucket_btn.pack(side=BOTTOM, pady=(4, 0))
 
+        # Pencil & Eraser toggle button
         pencil_btn = Lbl(self.tool_panel_canvas, text="\uef16", foreground="grey", relief="solid", width=3,
                          anchor="center", justify="center", font=("Segoe MDL2 Assets", 12), padding=(3, 2))
         pencil_btn.pack(side=BOTTOM, pady=(4, 0))
