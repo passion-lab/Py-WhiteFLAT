@@ -1,5 +1,3 @@
-import io
-import os
 from tkinter import (
     Tk, Toplevel,
     DoubleVar,
